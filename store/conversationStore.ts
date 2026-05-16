@@ -7,6 +7,7 @@
 
 import { create } from "zustand";
 import type { Conversation } from "@/types";
+import { useChatStore } from "@/store/chatStore";
 
 interface ConversationState {
   /* 所有会话列表 */
@@ -84,6 +85,9 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       updatedAt: now,
     };
 
+    /* 新建会话时清空聊天区 */
+    useChatStore.getState().clearMessages();
+
     set((state) => {
       const newConversations = [conversation, ...state.conversations];
       saveConversations(newConversations);
@@ -103,11 +107,22 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       );
       saveConversations(newConversations);
 
-      // 如果删除的是当前会话，自动切换到第一个会话或 null
-      const newCurrentId =
-        state.currentConversationId === id
-          ? newConversations[0]?.id || null
-          : state.currentConversationId;
+      const isDeletingCurrent = state.currentConversationId === id;
+      const newCurrentId = isDeletingCurrent
+        ? newConversations[0]?.id || null
+        : state.currentConversationId;
+
+      /* 删除当前会话时加载新会话的消息，或清空聊天区 */
+      if (isDeletingCurrent) {
+        const newCurrent = newConversations.find(
+          (c) => c.id === newCurrentId
+        );
+        if (newCurrent) {
+          useChatStore.getState().setMessages(newCurrent.messages);
+        } else {
+          useChatStore.getState().clearMessages();
+        }
+      }
 
       return {
         conversations: newConversations,
