@@ -10,8 +10,8 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // 服务端运行时配置
-  serverExternalPackages: ["react-syntax-highlighter"],
+  // Turbopack 配置（处理某类包无法被外部化的问题）
+  turbopack: {},
 };
 
 export default nextConfig;
