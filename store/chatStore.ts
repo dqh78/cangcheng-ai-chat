@@ -7,6 +7,7 @@
 
 import { create } from "zustand";
 import type { Message, MessageRole } from "@/types";
+import type { ImageItem } from "@/hooks/useImageUpload";
 
 interface ChatState {
   /* 当前会话的消息列表 */
@@ -15,6 +16,10 @@ interface ChatState {
   isLoading: boolean;
   /* 流式输出中止控制器 */
   abortController: AbortController | null;
+  /* 最近一次发送的图片（用于 UI 展示，不持久化） */
+  lastImages: ImageItem[];
+  /* 上次发送图片的消息 ID */
+  lastImagesMessageId: string | null;
 
   /* 添加一条消息（用户或 AI） */
   addMessage: (role: MessageRole, content: string) => string;
@@ -32,6 +37,8 @@ interface ChatState {
   setAbortController: (controller: AbortController | null) => void;
   /* 清空消息 */
   clearMessages: () => void;
+  /* 设置最近发送的图片 */
+  setLastImages: (images: ImageItem[], messageId: string) => void;
 }
 
 /* 简易 ID 生成器（客户端用，不需要 uuid） */
@@ -43,6 +50,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
   messages: [],
   isLoading: false,
   abortController: null,
+  lastImages: [],
+  lastImagesMessageId: null,
 
   addMessage: (role, content) => {
     const id = generateId();
@@ -111,5 +120,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
   setAbortController: (controller) => set({ abortController: controller }),
 
   clearMessages: () =>
-    set({ messages: [], isLoading: false, abortController: null }),
+    set({ messages: [], isLoading: false, abortController: null, lastImages: [], lastImagesMessageId: null }),
+
+  setLastImages: (images, messageId) =>
+    set({ lastImages: images, lastImagesMessageId: messageId }),
 }));

@@ -14,7 +14,8 @@ import ChatInput from "@/components/chat/ChatInput";
 import MarkdownRenderer from "@/components/chat/MarkdownRenderer";
 
 export default function ChatArea() {
-  const { messages, isLoading } = useChatStore();
+  const { messages, isLoading, lastImages, lastImagesMessageId } =
+    useChatStore();
   const { sendMessage, stopGeneration } = useChat();
 
   return (
@@ -124,9 +125,28 @@ export default function ChatArea() {
                   {msg.role === "assistant" ? (
                     <MarkdownRenderer content={msg.content || "..."} />
                   ) : (
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-                      {msg.content}
-                    </p>
+                    <>
+                      {/* 用户发送的图片缩略图 */}
+                      {msg.id === lastImagesMessageId && lastImages.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mb-2">
+                          {lastImages.map((img) => (
+                            <div
+                              key={img.id}
+                              className="w-16 h-16 rounded-lg overflow-hidden border border-white/20"
+                            >
+                              <img
+                                src={img.base64}
+                                alt={img.fileName}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                        {msg.content}
+                      </p>
+                    </>
                   )}
 
                   {/* 流式光标动画 */}

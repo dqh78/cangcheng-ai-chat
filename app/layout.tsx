@@ -11,6 +11,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeScript } from "@/components/layout/ThemeScript";
+import ClientLayout from "@/components/layout/ClientLayout";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -46,7 +47,7 @@ export default function RootLayout({
         <ThemeScript />
       </head>
       <body className="h-full bg-surface text-text-primary antialiased">
-        {children}
+        <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
   );

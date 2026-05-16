@@ -12,9 +12,69 @@
 
 import type { ChatRequest } from "@/types";
 
+/*
+ * 提取最后一条用户消息的文本内容
+ * 支持纯文本和 ContentPart 数组两种格式
+ */
+function getLastUserText(request: ChatRequest): string {
+  const lastUserMessage = request.messages
+    .filter((m) => m.role === "user")
+    .pop();
+
+  if (!lastUserMessage) return "";
+
+  const content = lastUserMessage.content;
+
+  /* 纯文本 */
+  if (typeof content === "string") return content;
+
+  /* ContentPart 数组 → 提取 text 部分 */
+  if (Array.isArray(content)) {
+    const textPart = content.find((part) => part.type === "text");
+    return textPart && typeof textPart.text === "string" ? textPart.text : "";
+  }
+
+  return "";
+}
+
+/* 检测是否包含图片 */
+function hasImages(request: ChatRequest): boolean {
+  const lastUserMessage = request.messages
+    .filter((m) => m.role === "user")
+    .pop();
+  if (!lastUserMessage) return false;
+
+  const content = lastUserMessage.content;
+  if (Array.isArray(content)) {
+    return content.some((part) => part.type === "image_url");
+  }
+  return false;
+}
+
 /* Mock 回复语料库 - 根据用户输入动态生成回复 */
-function generateMockResponse(userMessage: string): string {
+function generateMockResponse(userMessage: string, hasImage: boolean): string {
   const msg = userMessage.toLowerCase();
+
+  /* 图片分析 */
+  if (hasImage) {
+    return [
+      "## 🖼️ Mock 图片分析\n\n",
+      "这是在 Mock 演示模式下的模拟图片分析结果。\n\n",
+      "**如果是真实大模型，这里会返回：**\n\n",
+      "- 📝 图片内容的文字描述\n",
+      "- 🔍 物体识别与定位\n",
+      "- 📊 图表数据提取\n",
+      "- 🎨 色彩与风格分析\n",
+      "- 📸 场景理解与推理\n\n",
+      "> ⚠️ 当前为 Mock 演示模式，图片分析仅为模拟。\n",
+      "> 配置支持 Vision 的大模型 API（如 GPT-4o、Claude 3.5 等）即可获得真实识图能力。\n\n",
+      "要接入真实图片识别，推荐使用：\n",
+      "- **GPT-4o**（OpenAI）\n",
+      "- **DeepSeek-V3**（支持多模态）\n",
+      "- **通义千问 VL**（阿里）\n",
+      "- **Claude 3.5 Sonnet**（Anthropic）",
+    ].join("");
+  }
 
   /* 打招呼 */
   if (
@@ -41,7 +101,11 @@ function generateMockResponse(userMessage: string): string {
     msg.includes("code") ||
     msg.includes("function") ||
     msg.includes("react") ||
-    msg.includes("bug")
+    msg.includes("bug") ||
+    msg.includes("优化") ||
+    msg.includes("纠错") ||
+    msg.includes("解释") ||
+    msg.includes("实现")
   ) {
     return [
       "好的，我来帮你分析这段代码！\n\n",
@@ -170,14 +234,9 @@ export function createMockStream(
 ): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
 
-  /* 获取最后一条用户消息 */
-  const lastUserMessage =
-    request.messages
-      .filter((m) => m.role === "user")
-      .map((m) => (typeof m.content === "string" ? m.content : ""))
-      .pop() || "";
-
-  const fullResponse = generateMockResponse(lastUserMessage);
+  const lastUserText = getLastUserText(request);
+  const hasImage = hasImages(request);
+  const fullResponse = generateMockResponse(lastUserText, hasImage);
 
   /* 将回复按字符拆成小块，模拟逐 token 输出 */
   const chunks = splitIntoChunks(fullResponse, 3);

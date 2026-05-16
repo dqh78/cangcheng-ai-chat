@@ -25,7 +25,8 @@
 import { useCallback } from "react";
 import { useChatStore } from "@/store/chatStore";
 import { useConversationStore } from "@/store/conversationStore";
-import type { MessageRole } from "@/types";
+import type { MessageRole, MessageContent } from "@/types";
+import type { ImageItem } from "@/hooks/useImageUpload";
 
 export function useChat() {
   const {
@@ -35,6 +36,7 @@ export function useChat() {
     markLastMessageError,
     setLoading,
     setAbortController,
+    setLastImages,
   } = useChatStore();
 
   const { currentConversationId, updateConversationMessages } =
@@ -76,6 +78,32 @@ export function useChat() {
   }
 
   /*
+   * 构建多模态消息内容
+   * 纯文本 → 返回字符串；含图片 → 返回 content 数组
+   * OpenAI Vision API 格式：[{ type: "text", text }, { type: "image_url", image_url: { url } }]
+   */
+  function buildContent(
+    text: string,
+    images: ImageItem[]
+  ): string | MessageContent[] {
+    if (images.length === 0) return text || "";
+
+    const content: MessageContent[] = [];
+    if (text) {
+      content.push({ type: "text", text });
+    } else {
+      content.push({ type: "text", text: "请帮我分析这张图片的内容" });
+    }
+    for (const img of images) {
+      content.push({
+        type: "image_url",
+        image_url: { url: img.base64 },
+      });
+    }
+    return content;
+  }
+
+  /*
    * 发送消息并接收流式响应
    * 核心流程：
    *  1. 添加用户消息到列表
@@ -86,8 +114,10 @@ export function useChat() {
    *  6. 完成后 finishStreaming + 持久化
    */
   const sendMessage = useCallback(
-    async (content: string) => {
-      if (!content.trim()) return;
+    async (content: string, images: ImageItem[] = []) => {
+      const hasText = content.trim().length > 0;
+      const hasImages = images.length > 0;
+      if (!hasText && !hasImages) return;
 
       /* 防护 #1：正在加载时不允许并发发送 */
       const state = useChatStore.getState();
@@ -97,7 +127,28 @@ export function useChat() {
       state.abortController?.abort();
 
       /* Step 1: 添加用户消息 */
-      addMessage("user", content.trim());
+      const displayContent = content.trim() || (hasImages ? "请帮我分析这张图片" : "");
+      const userMsgId = addMessage("user", displayContent);
+
+      /* 缓存图片供 UI 展示缩略图 */
+      if (hasImages) {
+        setLastImages(images, userMsgId);
+      }
+
+      /* 自动生成会话标题：首条消息截取前 30 字作为标题 */
+      if (currentConversationId) {
+        const convStore = useConversationStore.getState();
+        const conv = convStore.conversations.find(
+          (c) => c.id === currentConversationId
+        );
+        if (conv && conv.title === "新对话") {
+          const trimmed = displayContent;
+          const title =
+            trimmed.slice(0, 30) + (trimmed.length > 30 ? "..." : "");
+          convStore.updateConversationTitle(currentConversationId, title);
+        }
+      }
+
       persistMessages();
 
       /* Step 2: 准备 AI 消息槽位 + 控制器 */
@@ -110,12 +161,26 @@ export function useChat() {
       try {
         /* Step 3: 构建请求体（含历史消息作为上下文） */
         const { messages } = useChatStore.getState();
-        const apiMessages = messages
+
+        /* 构建当前用户消息（支持多模态） */
+        const currentContent = buildContent(content.trim(), images);
+
+        /* 历史消息保持原 content 格式，当前消息用多模态 */
+        const apiMessages: Array<{
+          role: MessageRole;
+          content: string | MessageContent[];
+        }> = messages
           .filter((m) => !m.isStreaming)
+          .slice(0, -1) // 排除最后一条（刚添加的空 assistant 消息）
           .map((m) => ({
             role: m.role as MessageRole,
             content: m.content,
           }));
+
+        apiMessages.push({
+          role: "user" as MessageRole,
+          content: currentContent,
+        });
 
         /* Step 4: 发起流式请求 */
         const response = await fetch("/api/chat", {

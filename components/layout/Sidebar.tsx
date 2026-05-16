@@ -11,7 +11,7 @@ import { useConversationStore } from "@/store/conversationStore";
 import { useThemeStore } from "@/store/themeStore";
 import { useUIStore } from "@/store/uiStore";
 import { useChatStore } from "@/store/chatStore";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 export default function Sidebar() {
   const {
@@ -80,6 +80,11 @@ export default function Sidebar() {
     });
   };
 
+  const sortedConversations = useMemo(
+    () => [...conversations].sort((a, b) => b.updatedAt - a.updatedAt),
+    [conversations]
+  );
+
   return (
     <>
       {/* 移动端遮罩层 */}
@@ -133,19 +138,19 @@ export default function Sidebar() {
 
         {/* 会话列表 */}
         <div className="flex-1 overflow-y-auto px-2 py-2">
-          {conversations.length === 0 ? (
+          {sortedConversations.length === 0 ? (
             <div className="text-center text-text-tertiary text-sm py-8">
               暂无对话记录
               <br />
               点击上方按钮开始新对话
             </div>
           ) : (
-            conversations.map((conv) => {
+            sortedConversations.map((conv) => {
               const isActive = conv.id === currentConversationId;
               const isConfirming = conv.id === deleteConfirmId;
 
               return (
-                <div key={conv.id} className="group relative mb-0.5">
+                <div key={conv.id} className="group relative mb-0.5 animate-fade-in transition-all duration-300">
                   {isConfirming ? (
                     /* 删除确认状态 */
                     <div className="flex items-center gap-1 px-3 py-2 rounded-lg bg-error/10 border border-error/30">

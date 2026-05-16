@@ -59,6 +59,13 @@ function saveConversations(conversations: Conversation[]): void {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
   } catch {
     console.error("保存会话到 localStorage 失败");
+    /* Toast 提示：存储空间不足 */
+    try {
+      const { showToast } = require("@/store/uiStore").useUIStore.getState();
+      showToast("error", "存储空间不足，请清理旧对话", 5000);
+    } catch {
+      /* uiStore 可能尚未初始化 */
+    }
   }
 }
 
