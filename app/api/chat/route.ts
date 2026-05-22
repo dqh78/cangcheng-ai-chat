@@ -32,6 +32,7 @@ type ChatMessage = {
 export async function POST(request: NextRequest) {
   const useMock = isMockMode();
   let body: { messages?: ChatMessage[] } = {};
+  let augmentedMessages: ChatMessage[] = [];
 
   try {
     /* 解析前端传来的消息 */
@@ -43,6 +44,19 @@ export async function POST(request: NextRequest) {
     );
 
     const { messages } = body;
+
+    /*
+     * 注入当前日期到系统消息，解决 LLM 不知道「现在」是什么时间的问题
+     * 所有大模型（GPT/DeepSeek 等）的训练数据都有截止日期，不会自动感知当前时间
+     */
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
+    const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const systemMsg = {
+      role: "system" as const,
+      content: `当前日期：${dateStr} ${timeStr}（星期${["日", "一", "二", "三", "四", "五", "六"][now.getDay()]}）。请基于这个时间回答用户问题。`,
+    };
+    augmentedMessages = [systemMsg, ...(messages ?? [])];
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(
@@ -58,10 +72,10 @@ export async function POST(request: NextRequest) {
 
     if (useMock) {
       /* Mock 模式：本地模拟 SSE 流式回复 */
-      stream = createMockStream({ messages });
+      stream = createMockStream({ messages: augmentedMessages });
     } else {
       /* 真实模式：调用大模型 API 并透传流 */
-      const aiResponse = await chatCompletionStream({ messages });
+      const aiResponse = await chatCompletionStream({ messages: augmentedMessages });
       stream = createStreamProxy(aiResponse.body);
     }
 
@@ -79,7 +93,7 @@ export async function POST(request: NextRequest) {
 
     /* 异常时降级为 Mock 回复，保证演示不中断 */
     const fallbackStream = createMockStream({
-      messages: body.messages ?? [],
+      messages: augmentedMessages ?? [],
     });
 
     return new Response(fallbackStream, {

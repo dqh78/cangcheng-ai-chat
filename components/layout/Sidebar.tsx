@@ -27,20 +27,15 @@ export default function Sidebar() {
 
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  /* 切换会话：持久化当前消息 → 加载目标会话消息 */
+  /* 切换会话：加载目标会话消息 */
   const handleSelectConversation = (id: string) => {
-    /* 先保存当前会话的消息 */
-    const { conversations, currentConversationId, updateConversationMessages } =
-      useConversationStore.getState();
-    if (currentConversationId) {
-      const { messages } = useChatStore.getState();
-      updateConversationMessages(currentConversationId, messages);
-    }
+    /* 注：消息已由 useChat.sendMessage 实时持久化，此处无需重复保存 */
 
     /* 切换会话 ID */
     setCurrentConversation(id);
 
     /* 加载目标会话的消息 */
+    const { conversations } = useConversationStore.getState();
     const targetConv = conversations.find((c) => c.id === id);
     if (targetConv) {
       useChatStore.getState().setMessages(targetConv.messages);
@@ -179,12 +174,20 @@ export default function Sidebar() {
                       </button>
                     </div>
                   ) : (
-                    /* 正常会话项 */
-                    <button
+                    /* 正常会话项（用 div+role 避免 button 内嵌 button 的 HTML 错误） */
+                    <div
+                      role="button"
+                      tabIndex={0}
                       onClick={() => handleSelectConversation(conv.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleSelectConversation(conv.id);
+                        }
+                      }}
                       className={`
                         w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left
-                        transition-all duration-150
+                        transition-all duration-150 cursor-pointer
                         ${isActive
                           ? "bg-sidebar-active text-primary font-medium"
                           : "text-text-secondary hover:bg-sidebar-hover"
@@ -223,7 +226,7 @@ export default function Sidebar() {
                           />
                         </svg>
                       </button>
-                    </button>
+                    </div>
                   )}
                 </div>
               );
