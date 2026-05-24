@@ -12,11 +12,18 @@ import { useChatStore } from "@/store/chatStore";
 import { useChat } from "@/hooks/useChat";
 import ChatInput from "@/components/chat/ChatInput";
 import MarkdownRenderer from "@/components/chat/MarkdownRenderer";
+import { useRef, useEffect } from "react";
 
 export default function ChatArea() {
   const { messages, isLoading, lastImages, lastImagesMessageId } =
     useChatStore();
   const { sendMessage, stopGeneration } = useChat();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // 消息变化时自动滚动到底部
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   return (
     <div className="flex flex-col flex-1 min-w-0 h-full">
@@ -191,6 +198,9 @@ export default function ChatArea() {
                   </div>
                 </div>
               )}
+
+            {/* 滚动锚点 */}
+            <div ref={messagesEndRef} />
           </div>
         )}
       </div>

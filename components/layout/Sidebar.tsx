@@ -11,7 +11,8 @@ import { useConversationStore } from "@/store/conversationStore";
 import { useThemeStore } from "@/store/themeStore";
 import { useUIStore } from "@/store/uiStore";
 import { useChatStore } from "@/store/chatStore";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { useSession, signOut } from "next-auth/react";
 
 export default function Sidebar() {
   const {
@@ -20,10 +21,21 @@ export default function Sidebar() {
     createConversation,
     deleteConversation,
     setCurrentConversation,
+    loadConversations,
+    isHydrated,
   } = useConversationStore();
+
+  // 页面首次加载时从数据库读取会话列表
+  useEffect(() => {
+    if (!isHydrated) {
+      loadConversations();
+    }
+  }, [isHydrated, loadConversations]);
 
   const { theme, toggleTheme } = useThemeStore();
   const { mobileSidebarOpen, setMobileSidebarOpen } = useUIStore();
+  const { data: session } = useSession();
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
@@ -31,17 +43,8 @@ export default function Sidebar() {
   const handleSelectConversation = (id: string) => {
     /* 注：消息已由 useChat.sendMessage 实时持久化，此处无需重复保存 */
 
-    /* 切换会话 ID */
+    /* 切换会话 ID（消息由 conversationStore 自动加载） */
     setCurrentConversation(id);
-
-    /* 加载目标会话的消息 */
-    const { conversations } = useConversationStore.getState();
-    const targetConv = conversations.find((c) => c.id === id);
-    if (targetConv) {
-      useChatStore.getState().setMessages(targetConv.messages);
-    } else {
-      useChatStore.getState().clearMessages();
-    }
 
     setMobileSidebarOpen(false);
   };
@@ -76,7 +79,7 @@ export default function Sidebar() {
   };
 
   const sortedConversations = useMemo(
-    () => [...conversations].sort((a, b) => b.updatedAt - a.updatedAt),
+    () => [...conversations].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()),
     [conversations]
   );
 
@@ -197,7 +200,7 @@ export default function Sidebar() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm truncate">{conv.title}</p>
                         <p className="text-xs text-text-tertiary mt-0.5">
-                          {formatTime(conv.updatedAt)}
+                          {formatTime(new Date(conv.updatedAt).getTime())}
                         </p>
                       </div>
 
@@ -278,11 +281,64 @@ export default function Sidebar() {
               <span className="text-sm">{theme === "dark" ? "浅色" : "暗黑"}</span>
             </button>
 
-            {/* 用户头像占位 */}
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center">
-                <span className="text-xs text-primary font-medium">U</span>
-              </div>
+            {/* 用户信息 + 退出菜单 */}
+            <div className="relative">
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center gap-2 px-2 py-1.5 rounded-lg
+                  hover:bg-sidebar-hover transition-colors"
+                title={session?.user?.name || "用户"}
+              >
+                {session?.user?.image ? (
+                  <img
+                    src={session.user.image}
+                    alt="头像"
+                    className="w-7 h-7 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center">
+                    <span className="text-xs text-primary font-medium">
+                      {(session?.user?.name || "用")[0]}
+                    </span>
+                  </div>
+                )}
+                <span className="text-sm text-text-secondary max-w-[80px] truncate">
+                  {session?.user?.name || "用户"}
+                </span>
+              </button>
+
+              {/* 下拉菜单 */}
+              {showUserMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-50"
+                    onClick={() => setShowUserMenu(false)}
+                  />
+                  <div className="absolute bottom-full right-0 mb-2 w-48 bg-surface
+                    border border-border rounded-lg shadow-lg z-50 py-1">
+                    <div className="px-3 py-2 border-b border-border">
+                      <p className="text-sm font-medium text-text-primary truncate">
+                        {session?.user?.name || "用户"}
+                      </p>
+                      <p className="text-xs text-text-tertiary truncate">
+                        {session?.user?.email || "手机号用户"}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => signOut({ callbackUrl: "/auth/signin" })}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm
+                        text-text-secondary hover:bg-surface-secondary transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round"
+                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      </svg>
+                      退出登录
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

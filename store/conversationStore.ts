@@ -1,131 +1,102 @@
-/*
- * ============================================
- * conversationStore - 会话管理状态
- * 职责：管理会话列表、当前会话、CRUD 操作、localStorage 持久化
- * ============================================
- */
-
 import { create } from "zustand";
-import type { Conversation } from "@/types";
+import type { Conversation, Message } from "@/lib/generated/prisma/client";
+import type { Message as ChatMessage } from "@/types";
 import { useChatStore } from "@/store/chatStore";
+import * as conversationService from "@/lib/conversation-service";
 
 interface ConversationState {
-  /* 所有会话列表 */
   conversations: Conversation[];
-  /* 当前选中的会话 ID */
   currentConversationId: string | null;
-  /* 是否已从 localStorage 恢复 */
   isHydrated: boolean;
+  isLoading: boolean;
 
-  /* 获取当前会话对象 */
   getCurrentConversation: () => Conversation | null;
-  /* 新建会话 */
-  createConversation: () => string;
-  /* 删除会话 */
-  deleteConversation: (id: string) => void;
-  /* 切换当前会话 */
+  loadConversations: () => Promise<void>;
+  createConversation: () => Promise<string>;
+  deleteConversation: (id: string) => Promise<void>;
   setCurrentConversation: (id: string | null) => void;
-  /* 更新会话标题 */
-  updateConversationTitle: (id: string, title: string) => void;
-  /* 更新会话的消息列表（同步持久化） */
-  updateConversationMessages: (id: string, messages: Conversation["messages"]) => void;
-  /* 标记水合完成 */
+  updateConversationTitle: (id: string, title: string) => Promise<void>;
   setHydrated: () => void;
 }
 
-/* 生成会话 ID */
-function generateId(): string {
-  return `conv_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-}
-
-/* localStorage key */
-const STORAGE_KEY = "ai-chat-conversations";
-
-/* 从 localStorage 读取会话 */
-function loadConversations(): Conversation[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-/* 保存会话到 localStorage */
-function saveConversations(conversations: Conversation[]): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
-  } catch {
-    console.error("保存会话到 localStorage 失败");
-    /* Toast 提示：存储空间不足 */
-    try {
-      const { showToast } = require("@/store/uiStore").useUIStore.getState();
-      showToast("error", "存储空间不足，请清理旧对话", 5000);
-    } catch {
-      /* uiStore 可能尚未初始化 */
-    }
-  }
+function convertToChatMessage(dbMessage: Message): ChatMessage {
+  return {
+    id: dbMessage.id,
+    role: dbMessage.role as "user" | "assistant",
+    content: dbMessage.content,
+    timestamp: new Date(dbMessage.createdAt).getTime(),
+    isStreaming: dbMessage.isStreaming,
+    isError: dbMessage.isError,
+    errorMessage: dbMessage.errorMessage || undefined,
+  };
 }
 
 export const useConversationStore = create<ConversationState>((set, get) => ({
   conversations: [],
   currentConversationId: null,
   isHydrated: false,
+  isLoading: false,
 
   getCurrentConversation: () => {
     const { conversations, currentConversationId } = get();
-    return (
-      conversations.find((c) => c.id === currentConversationId) || null
-    );
+    return conversations.find((c) => c.id === currentConversationId) || null;
   },
 
-  createConversation: () => {
-    const id = generateId();
-    const now = Date.now();
-    const conversation: Conversation = {
-      id,
-      title: "新对话",
-      messages: [],
-      createdAt: now,
-      updatedAt: now,
-    };
+  loadConversations: async () => {
+    set({ isLoading: true });
+    try {
+      const conversations = await conversationService.fetchConversations();
+      set({
+        conversations,
+        currentConversationId: conversations[0]?.id || null,
+        isLoading: false,
+        isHydrated: true,
+      });
 
-    /* 新建会话时清空聊天区 */
+      if (conversations[0]) {
+        const detail = await conversationService.fetchConversation(
+          conversations[0].id
+        );
+        const chatMessages = detail.messages.map(convertToChatMessage);
+        useChatStore.getState().setMessages(chatMessages);
+      }
+    } catch (error) {
+      console.error("加载会话失败:", error);
+      set({ isLoading: false, isHydrated: true });
+    }
+  },
+
+  createConversation: async () => {
+    const conversation = await conversationService.createConversation();
     useChatStore.getState().clearMessages();
-
-    set((state) => {
-      const newConversations = [conversation, ...state.conversations];
-      saveConversations(newConversations);
-      return {
-        conversations: newConversations,
-        currentConversationId: id,
-      };
-    });
-
-    return id;
+    set((state) => ({
+      conversations: [conversation, ...state.conversations],
+      currentConversationId: conversation.id,
+    }));
+    return conversation.id;
   },
 
-  deleteConversation: (id) => {
+  deleteConversation: async (id) => {
+    await conversationService.deleteConversation(id);
     set((state) => {
-      const newConversations = state.conversations.filter(
-        (c) => c.id !== id
-      );
-      saveConversations(newConversations);
-
+      const newConversations = state.conversations.filter((c) => c.id !== id);
       const isDeletingCurrent = state.currentConversationId === id;
       const newCurrentId = isDeletingCurrent
         ? newConversations[0]?.id || null
         : state.currentConversationId;
 
-      /* 删除当前会话时加载新会话的消息，或清空聊天区 */
       if (isDeletingCurrent) {
-        const newCurrent = newConversations.find(
-          (c) => c.id === newCurrentId
-        );
-        if (newCurrent) {
-          useChatStore.getState().setMessages(newCurrent.messages);
+        if (newCurrentId) {
+          conversationService
+            .fetchConversation(newCurrentId)
+            .then((detail) => {
+              const chatMessages = detail.messages.map(convertToChatMessage);
+              useChatStore.getState().setMessages(chatMessages);
+            })
+            .catch((err) => {
+              console.error("加载新会话失败:", err);
+              useChatStore.getState().clearMessages();
+            });
         } else {
           useChatStore.getState().clearMessages();
         }
@@ -138,43 +109,27 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     });
   },
 
-  setCurrentConversation: (id) => {
+  setCurrentConversation: async (id) => {
+    if (!id) {
+      set({ currentConversationId: null });
+      useChatStore.getState().clearMessages();
+      return;
+    }
+
     set({ currentConversationId: id });
+    const conversation = await conversationService.fetchConversation(id);
+    const chatMessages = conversation.messages.map(convertToChatMessage);
+    useChatStore.getState().setMessages(chatMessages);
   },
 
-  updateConversationTitle: (id, title) => {
-    set((state) => {
-      const newConversations = state.conversations.map((c) =>
-        c.id === id ? { ...c, title, updatedAt: Date.now() } : c
-      );
-      saveConversations(newConversations);
-      return { conversations: newConversations };
-    });
-  },
-
-  updateConversationMessages: (id, messages) => {
-    set((state) => {
-      const newConversations = state.conversations.map((c) =>
-        c.id === id ? { ...c, messages, updatedAt: Date.now() } : c
-      );
-      saveConversations(newConversations);
-      return { conversations: newConversations };
-    });
+  updateConversationTitle: async (id, title) => {
+    await conversationService.updateConversation(id, { title });
+    set((state) => ({
+      conversations: state.conversations.map((c) =>
+        c.id === id ? { ...c, title, updatedAt: new Date() } : c
+      ),
+    }));
   },
 
   setHydrated: () => set({ isHydrated: true }),
 }));
-
-/* 初始化：在客户端从 localStorage 加载数据 */
-if (typeof window !== "undefined") {
-  const saved = loadConversations();
-  if (saved.length > 0) {
-    useConversationStore.setState({
-      conversations: saved,
-      currentConversationId: saved[0].id,
-      isHydrated: true,
-    });
-  } else {
-    useConversationStore.setState({ isHydrated: true });
-  }
-}
