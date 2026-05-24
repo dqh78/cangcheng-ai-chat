@@ -4,6 +4,24 @@ import type { Message as ChatMessage } from "@/types";
 import { useChatStore } from "@/store/chatStore";
 import * as conversationService from "@/lib/conversation-service";
 
+const PENDING_PREFIX = "pending_";
+
+function isPending(id: string): boolean {
+  return id.startsWith(PENDING_PREFIX);
+}
+
+function makePlaceholder(): Conversation {
+  const now = new Date();
+  return {
+    id: `${PENDING_PREFIX}${Date.now()}`,
+    userId: "",
+    title: "新对话",
+    codeMode: null,
+    createdAt: now,
+    updatedAt: now,
+  } as Conversation;
+}
+
 interface ConversationState {
   conversations: Conversation[];
   currentConversationId: string | null;
@@ -12,7 +30,8 @@ interface ConversationState {
 
   getCurrentConversation: () => Conversation | null;
   loadConversations: () => Promise<void>;
-  createConversation: () => Promise<string>;
+  createConversation: () => string;
+  realizeConversation: () => Promise<string>;
   deleteConversation: (id: string) => Promise<void>;
   setCurrentConversation: (id: string | null) => void;
   updateConversationTitle: (id: string, title: string) => Promise<void>;
@@ -66,18 +85,36 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     }
   },
 
-  createConversation: async () => {
-    const conversation = await conversationService.createConversation();
+  createConversation: () => {
+    const placeholder = makePlaceholder();
     useChatStore.getState().clearMessages();
     set((state) => ({
-      conversations: [conversation, ...state.conversations],
-      currentConversationId: conversation.id,
+      conversations: [placeholder, ...state.conversations],
+      currentConversationId: placeholder.id,
     }));
-    return conversation.id;
+    return placeholder.id;
+  },
+
+  realizeConversation: async () => {
+    const { currentConversationId } = get();
+    if (!currentConversationId || !isPending(currentConversationId)) {
+      return currentConversationId || "";
+    }
+
+    const real = await conversationService.createConversation();
+    set((state) => ({
+      conversations: state.conversations.map((c) =>
+        c.id === currentConversationId ? real : c
+      ),
+      currentConversationId: real.id,
+    }));
+    return real.id;
   },
 
   deleteConversation: async (id) => {
-    await conversationService.deleteConversation(id);
+    if (!isPending(id)) {
+      await conversationService.deleteConversation(id);
+    }
     set((state) => {
       const newConversations = state.conversations.filter((c) => c.id !== id);
       const isDeletingCurrent = state.currentConversationId === id;
@@ -117,13 +154,21 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     }
 
     set({ currentConversationId: id });
+
+    if (isPending(id)) {
+      useChatStore.getState().clearMessages();
+      return;
+    }
+
     const conversation = await conversationService.fetchConversation(id);
     const chatMessages = conversation.messages.map(convertToChatMessage);
     useChatStore.getState().setMessages(chatMessages);
   },
 
   updateConversationTitle: async (id, title) => {
-    await conversationService.updateConversation(id, { title });
+    if (!isPending(id)) {
+      await conversationService.updateConversation(id, { title });
+    }
     set((state) => ({
       conversations: state.conversations.map((c) =>
         c.id === id ? { ...c, title, updatedAt: new Date() } : c

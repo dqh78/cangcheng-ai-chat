@@ -83,22 +83,28 @@ export function useChat() {
         setLastImages(images, userMsgId);
       }
 
-      if (currentConversationId) {
+      // 如果是 pending 会话，先真正创建到数据库
+      let conversationId = currentConversationId;
+      if (conversationId) {
+        conversationId = await useConversationStore.getState().realizeConversation();
+      }
+
+      if (conversationId) {
         const convStore = useConversationStore.getState();
         const conv = convStore.conversations.find(
-          (c) => c.id === currentConversationId
+          (c) => c.id === conversationId
         );
         if (conv && conv.title === "新对话") {
           const trimmed = displayContent;
           const title =
             trimmed.slice(0, 30) + (trimmed.length > 30 ? "..." : "");
-          convStore.updateConversationTitle(currentConversationId, title);
+          convStore.updateConversationTitle(conversationId, title);
         }
       }
 
       // 只保存用户消息到数据库
-      if (currentConversationId) {
-        await conversationService.addMessage(currentConversationId, {
+      if (conversationId) {
+        await conversationService.addMessage(conversationId!, {
           role: "user",
           content: displayContent,
           contents: [],
@@ -179,11 +185,11 @@ export function useChat() {
         }
 
         // 流式结束后一次性保存 AI 消息到数据库
-        if (currentConversationId) {
+        if (conversationId) {
           const currentState = useChatStore.getState();
           const aiMsg = currentState.messages[currentState.messages.length - 1];
           if (aiMsg && aiMsg.role === "assistant") {
-            await conversationService.addMessage(currentConversationId, {
+            await conversationService.addMessage(conversationId!, {
               role: "assistant",
               content: aiMsg.content,
               contents: [],

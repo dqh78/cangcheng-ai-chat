@@ -11,6 +11,8 @@ import type { Toast } from "@/types";
 interface UIState {
   /* 侧边栏是否展开（桌面端） */
   sidebarOpen: boolean;
+  /* 桌面端侧边栏折叠状态 */
+  sidebarCollapsed: boolean;
   /* 移动端侧边栏是否展开 */
   mobileSidebarOpen: boolean;
   /* Toast 消息队列 */
@@ -22,6 +24,10 @@ interface UIState {
   toggleSidebar: () => void;
   /* 设置侧边栏状态 */
   setSidebarOpen: (open: boolean) => void;
+  /* 切换桌面端侧边栏折叠 */
+  toggleDesktopSidebar: () => void;
+  /* 设置桌面端侧边栏折叠 */
+  setDesktopSidebarOpen: (open: boolean) => void;
   /* 切换移动端侧边栏 */
   toggleMobileSidebar: () => void;
   /* 设置移动端侧边栏 */
@@ -41,6 +47,7 @@ function generateToastId(): string {
 
 export const useUIStore = create<UIState>((set, get) => ({
   sidebarOpen: true,
+  sidebarCollapsed: false,
   mobileSidebarOpen: false,
   toasts: [],
   globalError: null,
@@ -48,6 +55,11 @@ export const useUIStore = create<UIState>((set, get) => ({
   toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
 
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
+
+  toggleDesktopSidebar: () =>
+    set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+
+  setDesktopSidebarOpen: (open) => set({ sidebarCollapsed: !open }),
 
   toggleMobileSidebar: () =>
     set((state) => ({ mobileSidebarOpen: !state.mobileSidebarOpen })),

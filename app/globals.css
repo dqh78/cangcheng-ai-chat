@@ -1,142 +1,189 @@
 /*
  * ============================================
- * AI 多模态智能对话助手 - 全局样式
- * Tailwind CSS v4 主题配置 + 基础样式
+ * 苍城 AI - 全局样式
+ * Tailwind CSS v4 主题 + 分离式暗黑模式变量
+ * 科技蓝紫现代风格 · 玻璃态 · 微交互
  * ============================================
  */
 
 @import "tailwindcss";
 
-/*
- * 启用 class 策略暗黑模式
- * 往 html 添加 .dark 类即可切换暗黑主题
- */
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
  * ============================================
- * 设计令牌 (Design Tokens)
- * 使用 CSS 变量定义主题色，支持亮色/暗色双主题
+ * 设计令牌 — 浅色模式
+ * Tailwind 编译期需要纯颜色值解析透明度变体
  * ============================================
  */
-@theme inline {
-  /* 主色调 - 现代蓝紫渐变 */
-  --color-primary: #6366f1;
-  --color-primary-light: #818cf8;
-  --color-primary-dark: #4f46e5;
-  --color-primary-50: #eef2ff;
-  --color-primary-100: #e0e7ff;
-  --color-primary-200: #c7d2fe;
-  --color-primary-300: #a5b4fc;
-  --color-primary-400: #818cf8;
-  --color-primary-500: #6366f1;
-  --color-primary-600: #4f46e5;
-  --color-primary-700: #4338ca;
-  --color-primary-800: #3730a3;
-  --color-primary-900: #312e81;
+@theme {
+  /* 主色调 - 靛蓝紫渐变 */
+  --color-primary: #5B5EF7;
+  --color-primary-light: #8183FA;
+  --color-primary-dark: #4845D4;
+  --color-primary-50: rgba(91, 94, 247, 0.05);
+  --color-primary-100: rgba(91, 94, 247, 0.10);
+  --color-primary-200: rgba(91, 94, 247, 0.20);
+  --color-primary-300: rgba(91, 94, 247, 0.30);
+  --color-primary-400: rgba(91, 94, 247, 0.50);
+  --color-primary-500: #5B5EF7;
+  --color-primary-600: #4845D4;
+  --color-primary-700: #3A38B0;
+  --color-primary-800: #2D2B8C;
+  --color-primary-900: #1E1D5E;
 
-  /* 中性色 - 用于背景、文字、边框 */
-  --color-surface: #ffffff;
-  --color-surface-secondary: #f8fafc;
-  --color-surface-tertiary: #f1f5f9;
-  --color-border: #e2e8f0;
-  --color-border-light: #f1f5f9;
+  /* 辅助色 */
+  --color-accent: #8B5CF6;
+  --color-accent-light: #A78BFA;
+  --color-accent-dark: #7C3AED;
+
+  /* 第二辅色 - 青蓝 */
+  --color-cyan: #06B6D4;
+  --color-cyan-light: #22D3EE;
+
+  /* 背景色 */
+  --color-surface: #FAFBFC;
+  --color-surface-secondary: #F3F4F6;
+  --color-surface-tertiary: #E5E7EB;
+
+  /* 玻璃态专用 */
+  --color-glass-bg: rgba(255, 255, 255, 0.60);
+  --color-glass-bg-hover: rgba(255, 255, 255, 0.80);
+  --color-glass-border: rgba(0, 0, 0, 0.06);
+  --color-glass-border-hover: rgba(0, 0, 0, 0.10);
+
+  /* 边框 */
+  --color-border: rgba(0, 0, 0, 0.06);
+  --color-border-light: rgba(0, 0, 0, 0.04);
+  --color-border-hover: rgba(0, 0, 0, 0.10);
 
   /* 文字色 */
-  --color-text-primary: #0f172a;
-  --color-text-secondary: #475569;
-  --color-text-tertiary: #94a3b8;
+  --color-text-primary: #111113;
+  --color-text-secondary: #6B6F76;
+  --color-text-tertiary: #9B9DA1;
 
   /* 功能色 */
-  --color-success: #22c55e;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
-  --color-info: #3b82f6;
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  --color-info: #3B82F6;
 
-  /* 用户消息气泡 */
-  --color-bubble-user: #6366f1;
-  --color-bubble-user-text: #ffffff;
+  /* 消息气泡 */
+  --color-bubble-user: #5B5EF7;
+  --color-bubble-user-text: #FFFFFF;
+  --color-bubble-user-gradient-start: #5B5EF7;
+  --color-bubble-user-gradient-end: #8B5CF6;
+  --color-bubble-ai: #F4F5F7;
+  --color-bubble-ai-text: #111113;
 
-  /* AI 消息气泡 */
-  --color-bubble-ai: #f1f5f9;
-  --color-bubble-ai-text: #0f172a;
+  /* 输入区域 */
+  --color-input-surface: rgba(255, 255, 255, 0.60);
+  --color-glow-primary: rgba(91, 94, 247, 0.40);
 
   /* 侧边栏 */
-  --color-sidebar: #f8fafc;
-  --color-sidebar-hover: #f1f5f9;
-  --color-sidebar-active: #eef2ff;
+  --color-sidebar: rgba(255, 255, 255, 0.60);
+  --color-sidebar-hover: rgba(91, 94, 247, 0.04);
+  --color-sidebar-active: rgba(91, 94, 247, 0.08);
 
   /* 字体 */
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
 
   /* 圆角 */
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
-  --radius-2xl: 1.5rem;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-2xl: 22px;
+  --radius-bubble-user: 18px;
+  --radius-bubble-ai: 18px;
 
   /* 阴影 */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 2px 8px 0 rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 4px 20px 0 rgba(0, 0, 0, 0.08);
+  --shadow-glow: 0 0 24px rgba(91, 94, 247, 0.15);
+  --shadow-bubble: 0 2px 12px rgba(91, 94, 247, 0.12);
 }
 
 /*
  * ============================================
- * 暗黑模式主题变量覆写
+ * 暗黑模式 — 覆写变量
  * ============================================
  */
-.dark {
-  --color-surface: #0f172a;
-  --color-surface-secondary: #1e293b;
-  --color-surface-tertiary: #334155;
-  --color-border: #334155;
-  --color-border-light: #1e293b;
+html.dark {
+  --color-primary-50: rgba(91, 94, 247, 0.08) !important;
+  --color-primary-100: rgba(91, 94, 247, 0.14) !important;
+  --color-primary-200: rgba(91, 94, 247, 0.22) !important;
+  --color-primary-300: rgba(91, 94, 247, 0.32) !important;
+  --color-primary-400: rgba(91, 94, 247, 0.50) !important;
 
-  --color-text-primary: #f1f5f9;
-  --color-text-secondary: #94a3b8;
-  --color-text-tertiary: #64748b;
+  --color-surface: #0C0C0E !important;
+  --color-surface-secondary: #151517 !important;
+  --color-surface-tertiary: #1E1E20 !important;
 
-  --color-bubble-ai: #1e293b;
-  --color-bubble-ai-text: #e2e8f0;
+  --color-glass-bg: rgba(255, 255, 255, 0.04) !important;
+  --color-glass-bg-hover: rgba(255, 255, 255, 0.06) !important;
+  --color-glass-border: rgba(255, 255, 255, 0.08) !important;
+  --color-glass-border-hover: rgba(255, 255, 255, 0.14) !important;
 
-  --color-sidebar: #0f172a;
-  --color-sidebar-hover: #1e293b;
-  --color-sidebar-active: #1e293b;
+  --color-border: rgba(255, 255, 255, 0.08) !important;
+  --color-border-light: rgba(255, 255, 255, 0.05) !important;
+  --color-border-hover: rgba(255, 255, 255, 0.14) !important;
 
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4);
+  --color-text-primary: #EDEDEF !important;
+  --color-text-secondary: #9B9DA1 !important;
+  --color-text-tertiary: #6B6F76 !important;
+
+  --color-bubble-ai: #1E1E20 !important;
+  --color-bubble-ai-text: #EDEDEF !important;
+
+  --color-input-surface: rgba(255, 255, 255, 0.04) !important;
+
+  --color-sidebar: rgba(255, 255, 255, 0.03) !important;
+  --color-sidebar-hover: rgba(91, 94, 247, 0.06) !important;
+  --color-sidebar-active: rgba(91, 94, 247, 0.10) !important;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3) !important;
+  --shadow-md: 0 2px 8px 0 rgba(0, 0, 0, 0.4) !important;
+  --shadow-lg: 0 4px 20px 0 rgba(0, 0, 0, 0.5) !important;
+  --shadow-glow: 0 0 24px rgba(91, 94, 247, 0.20) !important;
+  --shadow-bubble: 0 2px 12px rgba(91, 94, 247, 0.18) !important;
 }
 
 /*
  * ============================================
- * 基础样式重置与全局设置
+ * 基础样式
  * ============================================
  */
 html {
+  width: 100%;
   height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 body {
+  width: 100%;
   height: 100%;
+  margin: 0;
+  padding: 0;
   background-color: var(--color-surface);
   color: var(--color-text-primary);
-  font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /*
  * ============================================
- * 滚动条美化
+ * 滚动条
  * ============================================
  */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -152,7 +199,6 @@ body {
   background-color: var(--color-text-secondary);
 }
 
-/* Firefox 滚动条 */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--color-text-tertiary) transparent;
@@ -163,10 +209,10 @@ body {
  * 动画关键帧
  * ============================================
  */
-@keyframes fade-in {
+@keyframes fade-in-up {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -174,33 +220,205 @@ body {
   }
 }
 
-@keyframes blink-cursor {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-in-right {
+  from {
     opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 
-@keyframes spin-slow {
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(91, 94, 247, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(91, 94, 247, 0.06);
+  }
+}
+
+@keyframes dot-bounce {
+  0%, 80%, 100% {
+    opacity: 0.4;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes scale-in {
   from {
-    transform: rotate(0deg);
+    opacity: 0;
+    transform: scale(0.95);
   }
   to {
-    transform: rotate(360deg);
+    opacity: 1;
+    transform: scale(1);
   }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/*
+ * ============================================
+ * Tailwind Utilities
+ * ============================================
+ */
+@utility animate-fade-in-up {
+  animation: fade-in-up 0.3s ease-out;
 }
 
 @utility animate-fade-in {
-  animation: fade-in 0.3s ease-out;
+  animation: fade-in 0.25s ease-out;
+}
+
+@utility animate-slide-in {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+@utility animate-scale-in {
+  animation: scale-in 0.2s ease-out;
 }
 
 @utility animate-blink-cursor {
   animation: blink-cursor 0.8s infinite;
 }
 
-@utility animate-spin-slow {
-  animation: spin-slow 2s linear infinite;
+@utility animate-dot-bounce {
+  animation: dot-bounce 1.2s infinite ease-in-out;
+}
+
+@utility animate-shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/*
+ * ============================================
+ * Prose 样式覆盖（Markdown 渲染）
+ * ============================================
+ */
+
+/* 全局禁用 focus outline（仅限侧边栏和聊天区域） */
+aside :focus,
+aside :focus-visible,
+main :focus,
+main :focus-visible {
+  outline: none !important;
+}
+
+.prose-sm {
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.prose-sm p {
+  margin-bottom: 0.75rem;
+}
+
+.prose-sm p:last-child {
+  margin-bottom: 0;
+}
+
+.prose-sm ul,
+.prose-sm ol {
+  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding-left: 1.25rem;
+}
+
+.prose-sm li {
+  margin-bottom: 0.25rem;
+}
+
+.prose-sm h1,
+.prose-sm h2,
+.prose-sm h3,
+.prose-sm h4 {
+  font-weight: 600;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: var(--color-text-primary);
+}
+
+.prose-sm h2 { font-size: 1.15rem; }
+.prose-sm h3 { font-size: 1.05rem; }
+
+.prose-sm blockquote {
+  border-left: 3px solid var(--color-primary);
+  padding-left: 1rem;
+  margin: 0.75rem 0;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.prose-sm a {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.prose-sm a:hover {
+  color: var(--color-primary-dark);
+}
+
+.prose-sm code:not(pre code) {
+  background: var(--color-surface-tertiary);
+  color: var(--color-primary);
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+.prose-sm pre {
+  margin: 0.75rem 0;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.prose-sm hr {
+  border-color: var(--color-border);
+  margin: 1rem 0;
+}
+
+.prose-sm table {
+  width: 100%;
+  margin: 0.75rem 0;
+  border-collapse: collapse;
+}
+
+.prose-sm th,
+.prose-sm td {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border);
+  text-align: left;
+}
+
+.prose-sm th {
+  background: var(--color-surface-secondary);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.prose-sm td {
+  font-size: 0.85rem;
 }

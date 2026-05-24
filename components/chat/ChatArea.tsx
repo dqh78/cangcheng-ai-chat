@@ -3,8 +3,7 @@
 /*
  * ============================================
  * ChatArea - 聊天主区域组件
- * 展示消息列表 + Markdown 渲染 + 底部输入框
- * 当前阶段：接入真实流式 API
+ * 极简欢迎页 + 玻璃态消息气泡 + 三点跳动加载动画
  * ============================================
  */
 
@@ -13,6 +12,7 @@ import { useChat } from "@/hooks/useChat";
 import ChatInput from "@/components/chat/ChatInput";
 import MarkdownRenderer from "@/components/chat/MarkdownRenderer";
 import { useRef, useEffect } from "react";
+import { Sparkles, Zap, Image, Code2 } from "lucide-react";
 
 export default function ChatArea() {
   const { messages, isLoading, lastImages, lastImagesMessageId } =
@@ -30,127 +30,117 @@ export default function ChatArea() {
       {/* 消息列表区域 */}
       <div className="flex-1 overflow-y-auto">
         {messages.length === 0 ? (
-          /* 空状态 - 欢迎界面 */
-          <div className="flex flex-col items-center justify-center h-full px-4">
-            <div className="text-center max-w-md">
-              {/* Logo */}
-              <div className="mb-6">
-                <div className="w-16 h-16 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
-                  <svg
-                    className="w-8 h-8 text-primary"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1.5}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"
-                    />
-                  </svg>
+          /* 空状态 - 极简欢迎界面 */
+          <div className="flex flex-col items-center justify-center h-full px-6">
+            <div className="text-center max-w-lg">
+              {/* 背景装饰光晕 */}
+              <div className="relative mb-10">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
+                <div className="relative w-24 h-24 mx-auto rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
+                  <Sparkles className="w-12 h-12 text-white" />
                 </div>
               </div>
 
-              <h2 className="text-2xl font-semibold text-text-primary mb-2">
-                你好，我是苍城 AI
+              {/* Slogan */}
+              <h2 className="text-[40px] font-semibold text-text-primary mb-3 tracking-tight">
+                苍城 AI
               </h2>
-              <p className="text-text-secondary mb-8">
-                支持多轮对话、图片识别、代码优化，
-                <br />
-                开始你的智能对话之旅吧
+              <p className="text-text-secondary text-lg leading-relaxed mb-8">
+                你的智能对话伙伴
               </p>
 
-              {/* 快捷入口 */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* 功能标签 pills */}
+              <div className="flex items-center justify-center gap-2 flex-wrap">
                 {[
-                  { icon: "💬", title: "智能对话", desc: "多轮上下文记忆" },
-                  { icon: "🖼️", title: "图片识别", desc: "上传图片识图问答" },
-                  { icon: "💻", title: "代码专项", desc: "解释/纠错/优化" },
-                  { icon: "🌙", title: "主题切换", desc: "暗黑/浅色模式" },
+                  { icon: Zap, label: "智能对话" },
+                  { icon: Image, label: "图片识别" },
+                  { icon: Code2, label: "代码专项" },
                 ].map((item) => (
-                  <div
-                    key={item.title}
-                    className="p-4 rounded-xl border border-border bg-surface-secondary
-                      hover:border-primary/30 hover:bg-surface-tertiary
-                      transition-all duration-200 cursor-pointer text-left"
+                  <span
+                    key={item.label}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full
+                      border border-border bg-surface-secondary/80 text-text-secondary text-[15px]
+                      transition-all duration-200"
                   >
-                    <div className="text-2xl mb-2">{item.icon}</div>
-                    <div className="text-sm font-medium text-text-primary">
-                      {item.title}
-                    </div>
-                    <div className="text-xs text-text-tertiary mt-0.5">
-                      {item.desc}
-                    </div>
-                  </div>
+                    <item.icon className="w-3.5 h-3.5 text-primary" />
+                    {item.label}
+                  </span>
                 ))}
               </div>
             </div>
           </div>
         ) : (
           /* 消息列表 */
-          <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
-            {messages.map((msg) => (
+          <div className="max-w-[768px] mx-auto px-4 py-6 space-y-8">
+            {messages.map((msg, index) => (
               <div
                 key={msg.id}
-                className={`animate-fade-in ${
+                className={`animate-fade-in-up ${
                   msg.role === "user"
                     ? "flex justify-end"
                     : "flex justify-start"
                 }`}
+                style={{ animationDelay: `${index * 0.05}s` }}
               >
                 <div
-                  className={`max-w-[85%] md:max-w-[75%] rounded-2xl px-4 py-3 ${
+                  className={`max-w-[85%] md:max-w-[75%] ${
                     msg.role === "user"
-                      ? "bg-primary text-white rounded-br-md"
+                      ? "rounded-[20px] rounded-br-[6px] px-5 py-3 bg-gradient-to-br from-primary to-accent text-white shadow-bubble"
                       : msg.isError
-                        ? "bg-error/10 text-error border border-error/30 rounded-bl-md"
-                        : "bg-surface-secondary text-text-primary rounded-bl-md border border-border"
+                        ? "rounded-[20px] rounded-bl-[6px] px-5 py-3 bg-error/8 text-error border border-error/20"
+                        : "rounded-[20px] rounded-bl-[6px] px-5 py-3 bg-bubble-ai text-bubble-ai-text border border-border/50"
                   }`}
                 >
                   {/* AI 角色标识 */}
-                  {msg.role === "assistant" && (
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
-                        <span className="text-xs text-primary">AI</span>
+                  {msg.role === "assistant" && !msg.isError && (
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                        <Sparkles className="w-3.5 h-3.5 text-white" />
                       </div>
-                      <span className="text-xs font-medium text-primary">
+                      <span className="text-sm font-medium text-primary">
                         苍城 AI
                       </span>
                       {msg.isStreaming && (
-                        <span className="text-xs text-text-tertiary">
+                        <span className="text-sm text-text-tertiary">
                           回复中...
                         </span>
-                      )}
-                      {msg.isError && (
-                        <span className="text-xs text-error">请求失败</span>
                       )}
                     </div>
                   )}
 
-                  {/* 消息内容：AI 消息用 Markdown 渲染，用户消息纯文本 */}
+                  {/* 错误标识 */}
+                  {msg.role === "assistant" && msg.isError && (
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <span className="text-xs font-medium text-error">
+                        请求失败
+                      </span>
+                    </div>
+                  )}
+
+                  {/* 消息内容 */}
                   {msg.role === "assistant" ? (
                     <MarkdownRenderer content={msg.content || "..."} />
                   ) : (
                     <>
                       {/* 用户发送的图片缩略图 */}
-                      {msg.id === lastImagesMessageId && lastImages.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mb-2">
-                          {lastImages.map((img) => (
-                            <div
-                              key={img.id}
-                              className="w-16 h-16 rounded-lg overflow-hidden border border-white/20"
-                            >
-                              <img
-                                src={img.base64}
-                                alt={img.fileName}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                      {msg.id === lastImagesMessageId &&
+                        lastImages.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mb-2.5">
+                            {lastImages.map((img) => (
+                              <div
+                                key={img.id}
+                                className="w-16 h-16 rounded-xl overflow-hidden border border-white/20"
+                              >
+                                <img
+                                  src={img.base64}
+                                  alt={img.fileName}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      <p className="text-base leading-relaxed whitespace-pre-wrap break-words">
                         {msg.content}
                       </p>
                     </>
@@ -158,10 +148,10 @@ export default function ChatArea() {
 
                   {/* 流式光标动画 */}
                   {msg.isStreaming && (
-                    <span className="inline-block w-0.5 h-4 bg-primary ml-0.5 align-middle animate-blink-cursor" />
+                    <span className="inline-block w-0.5 h-4 bg-accent ml-0.5 align-middle animate-blink-cursor rounded-full" />
                   )}
 
-                  {/* 错误重试提示 */}
+                  {/* 错误重试 */}
                   {msg.isError && msg.role === "assistant" && (
                     <button
                       onClick={() => {
@@ -175,7 +165,7 @@ export default function ChatArea() {
                           sendMessage(userMsg.content);
                         }
                       }}
-                      className="mt-2 text-xs text-primary hover:underline"
+                      className="mt-2.5 text-xs text-primary hover:underline transition-colors"
                     >
                       点击重试
                     </button>
@@ -184,20 +174,35 @@ export default function ChatArea() {
               </div>
             ))}
 
-            {/* 正在加载中的骨架动画 */}
-            {isLoading &&
-              messages.length > 0 &&
-              !messages[messages.length - 1]?.content && (
-                <div className="flex justify-start">
-                  <div className="max-w-[85%] rounded-2xl px-4 py-3 bg-surface-secondary border border-border">
-                    <div className="flex items-center gap-1">
-                      <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" />
-                      <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce [animation-delay:0.15s]" />
-                      <span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce [animation-delay:0.3s]" />
+            {/* 加载中状态 - 三点跳动动画 */}
+            {isLoading && (
+              <div className="flex justify-start animate-fade-in-up">
+                <div className="max-w-[85%] rounded-[20px] rounded-bl-[6px] px-5 py-4 bg-bubble-ai border border-border/50">
+                  <div className="flex items-center gap-2 mb-2.5">
+                    <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                      <Sparkles className="w-3.5 h-3.5 text-white" />
                     </div>
+                    <span className="text-xs font-medium text-primary">
+                      苍城 AI
+                    </span>
+                    <span className="text-xs text-text-tertiary">
+                      思考中...
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 py-1.5">
+                    <span className="w-2 h-2 bg-primary/60 rounded-full animate-dot-bounce" />
+                    <span
+                      className="w-2 h-2 bg-primary/60 rounded-full animate-dot-bounce"
+                      style={{ animationDelay: "0.15s" }}
+                    />
+                    <span
+                      className="w-2 h-2 bg-primary/60 rounded-full animate-dot-bounce"
+                      style={{ animationDelay: "0.3s" }}
+                    />
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
             {/* 滚动锚点 */}
             <div ref={messagesEndRef} />
@@ -206,7 +211,7 @@ export default function ChatArea() {
       </div>
 
       {/* 底部输入区域 */}
-      <ChatInput onSend={sendMessage} isLoading={isLoading} />
+      <ChatInput onSend={sendMessage} onStop={stopGeneration} isLoading={isLoading} />
     </div>
   );
 }

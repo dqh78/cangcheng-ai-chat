@@ -8,6 +8,10 @@
  * ============================================
  */
 
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+
 /* 超时时间（毫秒） */
 const REQUEST_TIMEOUT = 60000;
 
@@ -134,4 +138,42 @@ export function logRequest(method: string, path: string, body?: unknown): void {
 
 export function logError(method: string, path: string, error: unknown): void {
   console.error(`[API Error] ${method} ${path}:`, error);
+}
+
+// ============================================
+// 鉴权相关工具
+// ============================================
+
+/**
+ * 从 session 中获取当前登录用户的 ID，未登录则抛出 "未授权" 错误
+ */
+export async function getUserId(): Promise<string> {
+  const session = await getServerSession(authOptions);
+  const userId = (session?.user as Record<string, unknown> | undefined)?.id as string;
+  if (!userId) throw new Error("未授权");
+  return userId;
+}
+
+/**
+ * 包装 API handler，自动处理鉴权和错误分类：
+ * - 鉴权失败 → 401 "未授权"
+ * - handler 返回 NextResponse（如 404）→ 透传
+ * - 其他异常 → 500 + console.error 输出真实错误
+ */
+export async function withAuth<T>(
+  label: string,
+  handler: (userId: string) => Promise<T>
+): Promise<NextResponse> {
+  try {
+    const userId = await getUserId();
+    const result = await handler(userId);
+    if (result instanceof NextResponse) return result;
+    return NextResponse.json(result);
+  } catch (error) {
+    if (error instanceof Error && error.message === "未授权") {
+      return NextResponse.json({ error: "未授权" }, { status: 401 });
+    }
+    console.error(`${label}失败:`, error);
+    return NextResponse.json({ error: `${label}失败` }, { status: 500 });
+  }
 }

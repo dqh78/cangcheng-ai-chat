@@ -1,20 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-
-async function getUserId(): Promise<string> {
-  const session = await getServerSession(authOptions);
-  const userId = (session?.user as Record<string, unknown> | undefined)?.id as string;
-  if (!userId) throw new Error("未授权");
-  return userId;
-}
+import { withAuth } from "@/lib/api-utils";
 
 export async function GET(request: NextRequest) {
-  try {
-    const userId = await getUserId();
-
-    const conversations = await prisma.conversation.findMany({
+  return withAuth("获取会话列表", (userId) =>
+    prisma.conversation.findMany({
       where: { userId },
       orderBy: { updatedAt: "desc" },
       include: {
@@ -23,27 +13,17 @@ export async function GET(request: NextRequest) {
           take: 1,
         },
       },
-    });
-
-    return NextResponse.json(conversations);
-  } catch {
-    return NextResponse.json({ error: "未授权" }, { status: 401 });
-  }
+    })
+  );
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    const userId = await getUserId();
-
-    const conversation = await prisma.conversation.create({
+  return withAuth("创建会话", (userId) =>
+    prisma.conversation.create({
       data: {
         userId,
         title: "新对话",
       },
-    });
-
-    return NextResponse.json(conversation);
-  } catch {
-    return NextResponse.json({ error: "未授权" }, { status: 401 });
-  }
+    })
+  );
 }

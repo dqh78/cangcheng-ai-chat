@@ -3,14 +3,9 @@
 /*
  * ============================================
  * MarkdownRenderer - Markdown 渲染组件
- * 基于 react-markdown + remark-gfm（表格/删除线等）
+ * 基于 react-markdown + remark-gfm
  * 代码块使用 react-syntax-highlighter 高亮
- *
- * 面试考点：
- *  1. react-markdown：将 Markdown 字符串渲染为 React 组件
- *  2. remark-gfm 插件：支持 GitHub Flavored Markdown（表格、任务列表等）
- *  3. react-syntax-highlighter：基于 Prism.js 的代码语法高亮
- *  4. 自定义组件覆写：通过 components prop 定制代码块渲染
+ * 适配科技蓝紫主题
  * ============================================
  */
 
@@ -19,13 +14,14 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { Check, Copy } from "lucide-react";
 
 interface MarkdownRendererProps {
   content: string;
   className?: string;
 }
 
-/* 代码块组件（提取为独立组件以使用 memo） */
+/* 代码块组件 */
 const CodeBlock = memo(function CodeBlock({
   language,
   value,
@@ -46,8 +42,8 @@ const CodeBlock = memo(function CodeBlock({
   };
 
   return (
-    <div className="group relative my-3 rounded-xl overflow-hidden border border-border">
-      {/* 顶部工具栏：语言标签 + 复制按钮 */}
+    <div className="group relative my-3 rounded-xl overflow-hidden border border-border shadow-sm">
+      {/* 顶部工具栏 */}
       <div className="flex items-center justify-between px-4 py-2 bg-surface-tertiary border-b border-border">
         <span className="text-xs text-text-tertiary font-mono">
           {language || "code"}
@@ -55,20 +51,16 @@ const CodeBlock = memo(function CodeBlock({
         <button
           onClick={handleCopy}
           className="flex items-center gap-1 px-2 py-1 text-xs text-text-tertiary
-            hover:text-text-secondary rounded transition-colors"
+            hover:text-primary rounded-lg transition-colors"
         >
           {copied ? (
             <>
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
+              <Check className="w-3.5 h-3.5" />
               已复制
             </>
           ) : (
             <>
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
+              <Copy className="w-3.5 h-3.5" />
               复制
             </>
           )}
@@ -99,7 +91,7 @@ export default function MarkdownRenderer({
   className = "",
 }: MarkdownRendererProps) {
   return (
-    <div className={`prose-sm max-w-none ${className}`}>
+    <div className={`prose max-w-none ${className}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
@@ -142,8 +134,8 @@ export default function MarkdownRenderer({
           /* 表格样式 */
           table({ children }) {
             return (
-              <div className="overflow-x-auto my-3">
-                <table className="min-w-full border-collapse border border-border rounded-lg">
+              <div className="overflow-x-auto my-3 rounded-xl border border-border">
+                <table className="min-w-full border-collapse">
                   {children}
                 </table>
               </div>
@@ -151,14 +143,14 @@ export default function MarkdownRenderer({
           },
           th({ children }) {
             return (
-              <th className="border border-border px-3 py-2 bg-surface-secondary text-left text-sm font-medium">
+              <th className="border-b border-border px-3 py-2 bg-surface-secondary text-left text-sm font-medium">
                 {children}
               </th>
             );
           },
           td({ children }) {
             return (
-              <td className="border border-border px-3 py-2 text-sm">
+              <td className="border-b border-border px-3 py-2 text-sm">
                 {children}
               </td>
             );
